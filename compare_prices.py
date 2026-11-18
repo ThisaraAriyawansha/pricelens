@@ -2,12 +2,11 @@
 Compare prices: old site (greenie.ae) vs new site (greenplants.ae).
 Uses each Shopify store's public /products.json feed. Python 3.8+, no installs needed.
 
-Run:  python compare_prices.py          (command line, writes CSVs)
-      python app.py                     (web UI in your browser)
-Output: price_comparison.csv  (every variant, with status)
-        price_issues.csv      (only mismatches + products missing on new site)
+This module is the comparison engine used by the web UI (python app.py).
+Nothing is written to disk: downloaded products are kept in memory only, and
+reports are downloaded from the browser with the UI's download buttons.
 """
-import csv, json, os, re, time, urllib.error, urllib.request
+import json, re, time, urllib.error, urllib.request
 from datetime import datetime
 from difflib import SequenceMatcher
 
@@ -42,17 +41,14 @@ def get_json(url, tries=6, log=print):
         time.sleep(wait)
 
 
-def cache_path(base):
-    return re.sub(r"\W+", "_", base.split("//")[1]) + ".json"
+CACHE = {}  # base URL -> (download time, products); in memory only, gone when the app stops
 
 
 def fetch_all(base, use_cache=True, log=print):
-    cache = cache_path(base)
-    if use_cache and os.path.exists(cache):
-        when = datetime.fromtimestamp(os.path.getmtime(cache)).strftime("%Y-%m-%d %H:%M")
-        log(f"{base}: using saved data from {when} ({cache})")
-        with open(cache, encoding="utf-8") as f:
-            return json.load(f)
+    if use_cache and base in CACHE:
+        when, products = CACHE[base]
+        log(f"{base}: reusing data downloaded at {when:%H:%M} this session")
+        return [dict(p) for p in products]
     products, page = [], 1
     while True:
         batch = get_json(f"{base}/products.json?limit=250&page={page}", log=log).get("products", [])
@@ -62,9 +58,8 @@ def fetch_all(base, use_cache=True, log=print):
         log(f"{base}: page {page}, total {len(products)}")
         page += 1
         time.sleep(1.5)
-    with open(cache, "w", encoding="utf-8") as f:
-        json.dump(products, f)
-    return products
+    CACHE[base] = (datetime.now(), products)
+    return [dict(p) for p in products]
 
 
 def norm(t):
@@ -127,39 +122,3 @@ def compare(old, new, old_base=OLD, new_base=NEW, min_match=MIN_MATCH, progress=
             rows.append({**base, "variant": vt, "old_price": op, "new_price": npx,
                          "diff": diff, "pct": pct, "status": status})
     return rows
-
-
-COLUMNS = [("old_title", "old_title"), ("new_title", "new_title"), ("score", "match_score"),
-           ("variant", "variant"), ("old_price", "old_price_AED"), ("new_price", "new_price_AED"),
-           ("diff", "difference"), ("pct", "difference_pct"), ("status", "status"),
-           ("old_url", "old_url"), ("new_url", "new_url")]
-
-
-def write_csv(name, rows):
-    def write(path):
-        with open(path, "w", newline="", encoding="utf-8-sig") as f:
-            w = csv.writer(f)
-            w.writerow([h for _, h in COLUMNS])
-            w.writerows([["" if r[k] is None else r[k] for k, _ in COLUMNS] for r in rows])
-        return path
-    try:
-        return write(name)
-    except PermissionError:  # usually: the file is open in Excel
-        alt = f"{os.path.splitext(name)[0]}_{datetime.now():%Y%m%d_%H%M%S}.csv"
-        print(f"  {name} is locked (open in Excel?) -- saving as {alt} instead")
-        return write(alt)
-
-
-def main():
-    old, new = fetch_all(OLD), fetch_all(NEW)
-    rows = compare(old, new)
-    issues = [r for r in rows if r["status"] != OK]
-    write_csv("price_comparison.csv", rows)
-    path = write_csv("price_issues.csv", issues)
-    print(f"Done. {len(rows)} rows compared, {len(issues)} issues -> {path}")
-    print("Tip: sort by match_score and spot-check rows below 0.95 manually.")
-    print("Cached product data is reused on the next run; delete the .json files to re-download.")
-
-
-if __name__ == "__main__":
-    main()

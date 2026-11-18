@@ -3,7 +3,12 @@ Price Compare web UI.  Run:  python app.py   (opens your browser; no installs ne
 
 A tiny local server: the browser can't read other stores' /products.json directly
 (cross-origin), so this server fetches them and runs the comparison from compare_prices.py.
+
+Nothing is saved to disk. Results live in memory and are downloaded from the browser.
 """
+import sys
+sys.dont_write_bytecode = True  # don't leave __pycache__ files behind
+
 import json, os, socket, threading, uuid, webbrowser
 import urllib.error
 from http.server import ThreadingHTTPServer, BaseHTTPRequestHandler
@@ -125,7 +130,6 @@ def free_port(start=8765):
 
 
 if __name__ == "__main__":
-    os.chdir(HERE)  # keep the cached .json files next to the scripts
     port = free_port()
     server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
     url = f"http://127.0.0.1:{port}/"

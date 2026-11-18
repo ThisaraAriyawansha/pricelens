@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PriceLens</title>
+<style>
+:root {
+  --desk: linear-gradient(160deg, #dfe7f1 0%, #eef0f5 45%, #e9e4f0 100%);
+  --window: rgba(255,255,255,.82); --titlebar: rgba(246,246,248,.92);
+  --surface: #ffffff; --surface-2: #f5f5f7; --stripe: #f7f7f9; --hover: rgba(0,122,255,.07);
+  --border: rgba(0,0,0,.1); --hairline: rgba(0,0,0,.07);
+  --text: #1d1d1f; --muted: #6e6e73; --accent: #007aff; --accent-ink: #ffffff;
+  --focus: rgba(0,122,255,.35); --seg: rgba(118,118,128,.12); --seg-on: #ffffff;
+  --ok: #248a3d; --ok-bg: rgba(52,199,89,.14); --bad: #d70015; --bad-bg: rgba(255,59,48,.12);
+  --warn: #b25000; --warn-bg: rgba(255,149,0,.14); --miss: #8944ab; --miss-bg: rgba(175,82,222,.13);
+  --up: #d70015; --down: #0066cc;
+  --win-shadow: 0 0 0 .5px rgba(0,0,0,.12), 0 22px 70px rgba(0,0,0,.18), 0 4px 14px rgba(0,0,0,.06);
+  --btn-shadow: 0 .5px 1px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.1);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --desk: linear-gradient(160deg, #1b1f2a 0%, #15161b 50%, #221c2b 100%);
+    --window: rgba(30,30,32,.86); --titlebar: rgba(42,42,45,.92);
+    --surface: #1e1e20; --surface-2: #2a2a2d; --stripe: #232326; --hover: rgba(10,132,255,.14);
+    --border: rgba(255,255,255,.12); --hairline: rgba(255,255,255,.07);
+    --text: #f5f5f7; --muted: #98989d; --accent: #0a84ff; --accent-ink: #ffffff;
+    --focus: rgba(10,132,255,.45); --seg: rgba(118,118,128,.24); --seg-on: #636366;
+    --ok: #30d158; --ok-bg: rgba(48,209,88,.16); --bad: #ff6961; --bad-bg: rgba(255,69,58,.16);
+    --warn: #ffb340; --warn-bg: rgba(255,159,10,.16); --miss: #da8fff; --miss-bg: rgba(191,90,242,.18);
+    --up: #ff6961; --down: #64b5ff;
+    --win-shadow: 0 0 0 .5px rgba(255,255,255,.12), 0 22px 70px rgba(0,0,0,.55);
+    --btn-shadow: 0 0 0 .5px rgba(255,255,255,.14), 0 1px 1px rgba(0,0,0,.3);
+  }
+}
+* { box-sizing: border-box; }
+html { background: var(--desk) fixed; min-height: 100%; }
+body { margin: 0; color: var(--text); background: transparent;
+  font: 13px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 1320px; margin: 0 auto; padding: 28px 16px 48px; }
+
+/* ---------- window chrome ---------- */
+.window { background: var(--window); border-radius: 12px; box-shadow: var(--win-shadow);
+  backdrop-filter: saturate(180%) blur(30px); -webkit-backdrop-filter: saturate(180%) blur(30px); overflow: clip; }
+.titlebar { position: relative; display: flex; align-items: center; justify-content: center; height: 40px;
+  background: var(--titlebar); border-bottom: 1px solid var(--hairline); }
+.lights { position: absolute; left: 14px; display: flex; gap: 8px; }
+.lights i { width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 .5px rgba(0,0,0,.15); }
+.lights i:nth-child(1) { background: #ff5f57; } .lights i:nth-child(2) { background: #febc2e; } .lights i:nth-child(3) { background: #28c840; }
+.titlebar h1 { margin: 0; font-size: 13px; font-weight: 600; }
+.content { padding: 22px 22px 24px; }
+.sub { color: var(--muted); margin: 0 0 18px; }
+
+/* ---------- form ---------- */
+.card { background: var(--surface); border: 1px solid var(--hairline); border-radius: 10px; padding: 16px 18px; }
+label { display: block; font-weight: 500; font-size: 12px; color: var(--muted); margin-bottom: 5px; }
+.hint { color: var(--muted); font-weight: 400; }
+input[type=text], input[type=search] { width: 100%; padding: 5px 10px; height: 30px; border-radius: 7px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text); font: inherit;
+  transition: box-shadow .15s, border-color .15s; }
+input[type=search] { padding-left: 30px; border-radius: 8px; border-color: transparent; background: var(--seg) no-repeat 10px center /
+  13px url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%238e8e93' stroke-width='1.8' stroke-linecap='round'%3E%3Ccircle cx='7' cy='7' r='5'/%3E%3Cpath d='m11 11 3.5 3.5'/%3E%3C/svg%3E"); }
+input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px var(--focus); }
+input[type=range], input[type=checkbox] { accent-color: var(--accent); }
+.urls { display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: end; }
+@media (max-width: 720px) { .urls { grid-template-columns: 1fr; } .swap { justify-self: center; transform: rotate(90deg); } }
+
+button { font: inherit; font-size: 13px; cursor: pointer; border-radius: 6px; border: 0;
+  background: var(--surface); color: var(--text); padding: 4px 12px; min-height: 26px; box-shadow: var(--btn-shadow);
+  transition: filter .12s, background .12s; }
+button:hover { filter: brightness(.97); }
+button:active { filter: brightness(.92); }
+button:focus-visible { outline: none; box-shadow: var(--btn-shadow), 0 0 0 3px var(--focus); }
+button:disabled { opacity: .5; cursor: default; filter: none; }
+.primary { background: linear-gradient(180deg, color-mix(in srgb, var(--accent) 85%, #fff) 0%, var(--accent) 100%);
+  color: var(--accent-ink); font-weight: 500; box-shadow: 0 .5px 1px rgba(0,0,0,.2), inset 0 .5px 0 rgba(255,255,255,.25); }
+.primary:hover { filter: brightness(1.06); }
+#go { padding: 5px 18px; min-height: 30px; }
+.swap { height: 30px; width: 30px; padding: 0; font-size: 15px; border-radius: 50%; }
+.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-top: 16px; }
+details { margin-top: 14px; }
+summary { cursor: pointer; color: var(--muted); font-size: 12px; user-select: none; }
+summary:hover { color: var(--text); }
+.opts { display: flex; gap: 28px; flex-wrap: wrap; padding: 12px 2px 0; }
+.opts label { font-weight: 400; font-size: 13px; color: var(--text); display: flex; gap: 8px; align-items: center; }
+.error { margin-top: 14px; padding: 8px 12px; border-radius: 8px; background: var(--bad-bg); color: var(--bad); display: none; }
+.progress { margin-top: 16px; display: none; }
+.bar { height: 4px; background: var(--seg); border-radius: 99px; overflow: hidden; margin-top: 8px; }
+.bar > div { height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .3s; }
+.bar.indet > div { width: 30%; animation: slide 1.2s infinite ease-in-out; }
+@keyframes slide { from { margin-left: -30%; } to { margin-left: 100%; } }
+pre.log { max-height: 160px; overflow: auto; background: var(--surface-2); padding: 10px; border-radius: 8px;
+  font: 11px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace; margin: 8px 0 0; white-space: pre-wrap; }
+
+/* ---------- results ---------- */
+#results { display: none; margin-top: 22px; }
+.stats { display: flex; gap: 2px; padding: 2px; background: var(--seg); border-radius: 9px; overflow-x: auto; }
+.stat { flex: 1 0 auto; display: flex; align-items: center; justify-content: center; gap: 8px;
+  background: transparent; box-shadow: none; border-radius: 7px; padding: 5px 12px; white-space: nowrap; }
+.stat:hover { filter: none; background: rgba(127,127,127,.1); }
+.stat b { font-weight: 600; font-variant-numeric: tabular-nums; font-size: 11px; color: var(--muted);
+  background: rgba(127,127,127,.15); padding: 0 7px; border-radius: 99px; }
+.stat.active { background: var(--seg-on); box-shadow: 0 1px 3px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.06); font-weight: 500; }
+.stat.active b { background: var(--accent); color: #fff; }
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin: 14px 0 10px; }
+.toolbar input { flex: 1 1 240px; width: auto; }
+.count { color: var(--muted); margin-left: auto; font-size: 12px; }
+.toolbar.downloads { margin-top: -2px; }
+
+/* Table scrolls inside its own box so the header can stay pinned. */
+.tablewrap { overflow: auto; max-height: calc(100vh - 110px); min-height: 240px;
+  border: 1px solid var(--hairline); border-radius: 10px; background: var(--surface); }
+table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 980px; }
+th, td { padding: 7px 12px; text-align: left; vertical-align: top; }
+th { position: sticky; top: 0; z-index: 2; background-color: var(--titlebar);
+  backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px);
+  box-shadow: inset 0 -1px 0 var(--border); font-size: 11px; color: var(--muted);
+  font-weight: 600; cursor: pointer; user-select: none; white-space: nowrap; padding-top: 8px; padding-bottom: 8px; }
+th + th { background-image: linear-gradient(var(--border), var(--border)); background-size: 1px 14px;
+  background-position: left center; background-repeat: no-repeat; }
+th:hover:not(.nosort), th.sorted { color: var(--text); }
+th.sorted::after { content: "⌃"; display: inline-block; margin-left: 5px; font-size: 11px; transform: translateY(2px); }
+th.sorted.desc::after { transform: rotate(180deg) translateY(1px); }
+th.nosort { cursor: default; }
+tbody tr:nth-child(even) td { background: var(--stripe); }
+tbody tr:hover td { background: var(--hover); }
+td.num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+th.num { text-align: right; }
+a { color: inherit; text-decoration: none; }
+a:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 3px; }
+.closest { color: var(--muted); font-size: 12px; }
+.badge { display: inline-block; padding: 1px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+.b-ok { background: var(--ok-bg); color: var(--ok); } .b-bad { background: var(--bad-bg); color: var(--bad); }
+.b-warn { background: var(--warn-bg); color: var(--warn); } .b-miss { background: var(--miss-bg); color: var(--miss); }
+.up { color: var(--up); } .down { color: var(--down); }
+.score.low { color: var(--warn); font-weight: 600; }
+.copy1 { padding: 1px 9px; font-size: 11px; min-height: 20px; opacity: .55; }
+tbody tr:hover .copy1, .copy1:focus-visible { opacity: 1; }
+.more { display: block; margin: 12px auto 0; }
+.empty { padding: 40px; text-align: center; color: var(--muted); }
+#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); opacity: 0;
+  background: var(--titlebar); color: var(--text); padding: 9px 16px; border-radius: 10px;
+  backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); box-shadow: var(--win-shadow);
+  transition: .2s; pointer-events: none; }
+#toast.show { opacity: 1; transform: translateX(-50%); }
+</style>
+</head>
+<body>
+<div class="wrap">
+ <div class="window">
+  <header class="titlebar">
+    <div class="lights" aria-hidden="true"><i></i><i></i><i></i></div>
+    <h1>Price Compare</h1>
+  </header>
+  <div class="content">
+  <p class="sub">Compare product prices between two Shopify stores, such as an old site and its replacement.</p>
+
+  <form class="card" id="form">
+    <div class="urls">
+      <div>
+        <label for="old">Old site URL</label>
+        <input type="text" id="old" placeholder="e.g. www.greenie.ae" autocomplete="url">
+      </div>
+      <button type="button" class="swap" id="swap" title="Swap old and new">⇄</button>
+      <div>
+        <label for="new">New site URL</label>
+        <input type="text" id="new" placeholder="e.g. greenplants.ae" autocomplete="url">
+      </div>
+    </div>
+    <details>
+      <summary>Options</summary>
+      <div class="opts">
+        <label>Title match strictness
+          <input type="range" id="minMatch" min="0.6" max="1" step="0.01" value="0.85">
+          <b id="minMatchVal">85%</b>
+        </label>
+        <label><input type="checkbox" id="useCache"> Reuse data already downloaded this session <span class="hint">(faster, but prices may be stale. Nothing is saved to your computer.)</span></label>
+      </div>
+    </details>
+    <div class="row">
+      <button type="submit" class="primary" id="go">Compare prices</button>
+      <span class="hint" id="hint">Downloads every product from both stores. Usually takes under a minute.</span>
+    </div>
+    <div class="error" id="error"></div>
+    <div class="progress" id="progress">
+      <div id="stage"></div>
+      <div class="bar indet" id="bar"><div></div></div>
+      <details><summary>Details</summary><pre class="log" id="log"></pre></details>
+    </div>
+  </form>
+
+  <section id="results">
+    <div class="stats" id="stats"></div>
+    <div class="toolbar">
+      <input type="search" id="q" placeholder="Search product or variant…">
+      <button id="copyAll" title="Copies the rows below. Paste into Excel or Google Sheets.">Copy table</button>
+      <span class="count" id="count"></span>
+    </div>
+    <div class="toolbar downloads">
+      <span class="hint">Save report:</span>
+      <button class="primary dl" data-dl="all" title="Every row from the comparison">Full report (CSV)</button>
+      <button class="dl" data-dl="issues" title="Price mismatches, missing variants and missing products">Issues only (CSV)</button>
+      <button class="dl" data-dl="view" title="Exactly the rows shown below, with your filter, search and sort">Current view (CSV)</button>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th data-k="old_title">Old site product</th>
+          <th data-k="new_title">New site match</th>
+          <th data-k="score" class="num" title="How similar the product titles are">Match</th>
+          <th data-k="variant">Variant</th>
+          <th data-k="old_price" class="num">Old price</th>
+          <th data-k="new_price" class="num">New price</th>
+          <th data-k="diff" class="num">Difference</th>
+          <th data-k="status">Status</th>
+          <th class="nosort"></th>
+        </tr></thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    <button class="more" id="more">Show more</button>
+  </section>
+  </div>
+ </div>
+</div>
+<div id="toast"></div>
+
+<script src="compare.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const STATUS = {
+  "OK": ["OK", "b-ok"],
+  "PRICE MISMATCH": ["Price mismatch", "b-bad"],
+  "VARIANT NOT FOUND ON NEW SITE": ["Variant missing", "b-warn"],
+  "MISSING ON NEW SITE": ["Product missing", "b-miss"],
+};
+const FILTERS = [
+  ["issues", "All issues", r => r.status !== "OK"],
+  ["all", "All rows", () => true],
+  ["PRICE MISMATCH", "Price mismatch", r => r.status === "PRICE MISMATCH"],
+  ["VARIANT NOT FOUND ON NEW SITE", "Variant missing", r => r.status === "VARIANT NOT FOUND ON NEW SITE"],
+  ["MISSING ON NEW SITE", "Product missing", r => r.status === "MISSING ON NEW SITE"],
+  ["OK", "Price matches", r => r.status === "OK"],
+];
+const PAGE = 300;
+let rows = [], view = [], filter = "issues", sort = { k: null, desc: false }, limit = PAGE, sites = {};
+
+const store = {
+  get(k) { try { return localStorage.getItem(k); } catch { return null; } },
+  set(k, v) { try { localStorage.setItem(k, v); } catch {} },
+};
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const money = n => n == null ? "—" : n.toFixed(2);
+
+function toast(msg) {
+  const t = $("#toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch {
+    const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta);
+    ta.select(); const ok = document.execCommand("copy"); ta.remove(); return ok;
+  }
+}
+
+// ---------- setup ----------
+(function init() {
+  $("#old").value = store.get("pc.old") || PriceLens.OLD;
+  $("#new").value = store.get("pc.new") || PriceLens.NEW;
+  const mm = store.get("pc.minMatch") || PriceLens.MIN_MATCH;
+  $("#minMatch").value = mm; showMinMatch();
+})();
+function showMinMatch() { $("#minMatchVal").textContent = Math.round($("#minMatch").value * 100) + "%"; }
+$("#minMatch").oninput = showMinMatch;
+$("#swap").onclick = () => { const o = $("#old").value; $("#old").value = $("#new").value; $("#new").value = o; };
+
+// ---------- run comparison ----------
+$("#form").onsubmit = async e => {
+  e.preventDefault();
+  showError("");
+  let old, neu;
+  try {
+    old = PriceLens.cleanUrl($("#old").value, "old site");
+    neu = PriceLens.cleanUrl($("#new").value, "new site");
+    if (old === neu) throw new Error("The old and new site URLs are the same.");
+  } catch (err) { return showError(err.message); }
+  const minMatch = Math.min(Math.max(+$("#minMatch").value || PriceLens.MIN_MATCH, 0.5), 1);
+  $("#old").value = old; $("#new").value = neu;
+  store.set("pc.old", old); store.set("pc.new", neu); store.set("pc.minMatch", minMatch);
+  sites = { old, new: neu };
+
+  $("#go").disabled = true; $("#go").textContent = "Comparing…";
+  $("#progress").style.display = "block"; $("#stage").textContent = "Starting…"; $("#log").textContent = "";
+  setBar(null);
+  const logEl = $("#log");
+  try {
+    const result = await PriceLens.run({ old, new: neu, minMatch, useCache: $("#useCache").checked }, {
+      log: line => { logEl.textContent += (logEl.textContent ? "\n" : "") + line; logEl.scrollTop = logEl.scrollHeight; },
+      stage: s => { $("#stage").textContent = s; setBar(s.startsWith("Matching") ? 0 : null); },
+      progress: p => setBar(p),
+    });
+    $("#progress").style.display = "none";
+    rows = result; filter = "issues"; limit = PAGE; $("#q").value = "";
+    $("#results").style.display = "block";
+    render();
+    $("#results").scrollIntoView({ behavior: "smooth" });
+  } catch (err) {
+    showError(PriceLens.friendly(err));
+    $("#progress").style.display = "none";
+  } finally {
+    $("#go").disabled = false; $("#go").textContent = "Compare prices";
+  }
+};
+
+function setBar(p) {
+  $("#bar").classList.toggle("indet", p == null);
+  $("#bar > div").style.width = p == null ? "" : Math.round(p * 100) + "%";
+}
+function showError(msg) { $("#error").textContent = msg; $("#error").style.display = msg ? "block" : "none"; }
+
+// ---------- results ----------
+function computeView() {
+  const f = FILTERS.find(x => x[0] === filter)[2];
+  const q = $("#q").value.trim().toLowerCase();
+  let v = rows.filter(r => f(r) && (!q || (r.old_title + " " + r.new_title + " " + r.variant).toLowerCase().includes(q)));
+  if (sort.k) {
+    const k = sort.k, d = sort.desc ? -1 : 1;
+    v = v.slice().sort((a, b) => {
+      const x = a[k], y = b[k];
+      if (x == null && y == null) return 0;
+      if (x == null) return 1;
+      if (y == null) return -1;
+      return (typeof x === "number" ? x - y : String(x).localeCompare(String(y))) * d;
+    });
+  }
+  return v;
+}
+
+function render() {
+  $("#stats").innerHTML = FILTERS.map(([key, label, f]) =>
+    `<button class="stat ${key === filter ? "active" : ""}" data-f="${esc(key)}"><span>${label}</span><b>${rows.filter(f).length.toLocaleString()}</b></button>`
+  ).join("");
+  document.querySelectorAll("th[data-k]").forEach(th => {
+    th.classList.toggle("sorted", th.dataset.k === sort.k);
+    th.classList.toggle("desc", th.dataset.k === sort.k && sort.desc);
+  });
+  view = computeView();
+  const shown = view.slice(0, limit);
+  $("#tbody").innerHTML = shown.length ? shown.map(rowHtml).join("")
+    : `<tr><td colspan="9" class="empty">No rows match. Try another filter or search.</td></tr>`;
+  $("#count").textContent = view.length > shown.length
+    ? `Showing ${shown.length.toLocaleString()} of ${view.length.toLocaleString()}` : `${view.length.toLocaleString()} rows`;
+  $("#more").style.display = view.length > shown.length ? "block" : "none";
+}
+
+function link(url, text) { return url ? `<a href="${esc(url)}" target="_blank" rel="noopener">${esc(text)}</a>` : esc(text); }
+
+function rowHtml(r, i) {
+  const [label, cls] = STATUS[r.status] || [r.status, ""];
+  const missing = r.status === "MISSING ON NEW SITE";
+  const newCell = missing
+    ? (r.new_title ? `<span class="closest">Closest: ${link(r.new_url, r.new_title)}</span>` : "—")
+    : link(r.new_url, r.new_title);
+  let diff = "—";
+  if (r.diff != null && r.diff !== 0) {
+    const c = r.diff > 0 ? "up" : "down", arrow = r.diff > 0 ? "▲" : "▼";
+    diff = `<span class="${c}">${arrow} ${Math.abs(r.diff).toFixed(2)}${r.pct != null ? ` (${r.pct > 0 ? "+" : ""}${r.pct}%)` : ""}</span>`;
+  } else if (r.diff === 0) diff = "0.00";
+  const low = !missing && r.score < 0.95;
+  return `<tr>
+    <td>${link(r.old_url, r.old_title)}</td>
+    <td>${newCell}</td>
+    <td class="num score ${low ? "low" : ""}" ${low ? 'title="Titles differ a bit. Check that this is the same product."' : ""}>${Math.round(r.score * 100)}%</td>
+    <td>${esc(r.variant) || "—"}</td>
+    <td class="num">${money(r.old_price)}</td>
+    <td class="num">${money(r.new_price)}</td>
+    <td class="num">${diff}</td>
+    <td><span class="badge ${cls}">${label}</span></td>
+    <td><button class="copy1" data-i="${i}" title="Copy this row">Copy</button></td>
+  </tr>`;
+}
+
+const COLS = [["old_title", "Old product"], ["new_title", "New product"], ["score", "Match"], ["variant", "Variant"],
+  ["old_price", "Old price (AED)"], ["new_price", "New price (AED)"], ["diff", "Difference"], ["pct", "Difference %"],
+  ["status", "Status"], ["old_url", "Old URL"], ["new_url", "New URL"]];
+const cell = v => v == null ? "" : String(v);
+const toTSV = list => [COLS.map(c => c[1]), ...list.map(r => COLS.map(([k]) => cell(r[k]).replace(/[\t\r\n]+/g, " ")))]
+  .map(a => a.join("\t")).join("\n");
+const toCSV = list => [COLS.map(c => c[1]), ...list.map(r => COLS.map(([k]) => cell(r[k])))]
+  .map(a => a.map(v => /[",\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v).join(",")).join("\r\n");
+
+$("#stats").onclick = e => { const b = e.target.closest("[data-f]"); if (b) { filter = b.dataset.f; limit = PAGE; render(); } };
+$("#q").oninput = () => { limit = PAGE; render(); };
+$("#more").onclick = () => { limit += PAGE; render(); };
+document.querySelector("thead").onclick = e => {
+  const th = e.target.closest("th[data-k]"); if (!th) return;
+  sort = sort.k === th.dataset.k ? { k: sort.k, desc: !sort.desc } : { k: th.dataset.k, desc: false };
+  render();
+};
+$("#tbody").onclick = async e => {
+  const b = e.target.closest(".copy1"); if (!b) return;
+  const r = view[+b.dataset.i];
+  const text = `${r.old_title}${r.variant ? " / " + r.variant : ""}: old ${money(r.old_price)} AED, new ${money(r.new_price)} AED (${(STATUS[r.status] || [r.status])[0]})${r.old_url ? "\n" + r.old_url : ""}${r.new_url ? "\n" + r.new_url : ""}`;
+  if (await copyText(text)) { b.textContent = "Copied ✓"; setTimeout(() => b.textContent = "Copy", 1500); }
+};
+$("#copyAll").onclick = async () => {
+  if (!view.length) return toast("Nothing to copy");
+  if (await copyText(toTSV(view))) toast(`Copied ${view.length.toLocaleString()} rows. Paste into Excel or Google Sheets.`);
+  else toast("Copy failed. Use Download CSV instead.");
+};
+function downloadCSV(list, label) {
+  if (!list.length) return toast("Nothing to download");
+  const host = u => (u || "").replace(/^https?:\/\//, "").replace(/\W+/g, "_");
+  const d = new Date(), stamp = d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
+  const blob = new Blob(["﻿" + toCSV(list)], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `prices_${host(sites.old)}_vs_${host(sites.new)}_${label}_${stamp}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  toast(`Saving ${list.length.toLocaleString()} rows…`);
+}
+document.querySelector(".downloads").onclick = e => {
+  const b = e.target.closest("[data-dl]"); if (!b) return;
+  if (b.dataset.dl === "all") downloadCSV(rows, "full_report");
+  else if (b.dataset.dl === "issues") downloadCSV(rows.filter(r => r.status !== "OK"), "issues");
+  else downloadCSV(view, filter.toLowerCase().replace(/\W+/g, "_") + "_view");
+};
+</script>
+</body>
+</html>
